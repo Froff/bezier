@@ -9,66 +9,93 @@ public class BezierEditor : Editor
 
     private int selectedIndex = -1;
 
+    public override void OnInspectorGUI()
+    {
+        SerializedProperty sp = serializedObject.GetIterator();
+        int index = 0;
+
+        int childStep = 0;
+
+        while (sp.NextVisible(childStep<3))
+        {
+            
+            if(index > 2)
+            {
+                if(index == 3)
+                {
+                    EditorGUILayout.Vector3Field("origin", Vector3.zero);
+                }
+                EditorGUILayout.PropertyField(sp);
+            }
+            childStep++;
+            index++;
+        }
+
+
+
+    }
+
     void OnSceneGUI()
     {
         BezierSpline bezier = target as BezierSpline;
-        
+
         Transform handleTransform = bezier.transform;
         Quaternion handleRotation = Tools.pivotRotation == PivotRotation.Local ?
             handleTransform.rotation : Quaternion.identity;
 
-        for (int i = 1; i < bezier.CtrlPoints.Length; i+=3)
-        {
-            //DEFINE POINTS in localspace
+        Vector3 a = handleTransform.TransformPoint(Vector2.zero);
+    }
+    //    for (int i = 0; i < bezier.CtrlPoints.Length; i+=3)
+    //    {
+    //        //DEFINE POINTS in localspace
 
-            Vector3 a = handleTransform.TransformPoint(bezier.CtrlPoints[i - 1]);
-            Vector3 b = handleTransform.TransformPoint(bezier.CtrlPoints[i]);
-            Vector3 c = handleTransform.TransformPoint(bezier.CtrlPoints[i + 1]);
-            Vector3 d = handleTransform.TransformPoint(bezier.CtrlPoints[i + 2]);
+    //        Vector3 b = handleTransform.TransformPoint(bezier.CtrlPoints[i]);
+    //        Vector3 c = handleTransform.TransformPoint(bezier.CtrlPoints[i + 1]);
+    //        Vector3 d = handleTransform.TransformPoint(bezier.CtrlPoints[i + 2]);
 
-            Vector3[] curvePoints = { a, b, c, d }; //These have been transformed into localspace points
+    //        Vector3[] curvePoints = { a, b, c, d }; //These have been transformed into localspace points
 
-            BezierEditor.DrawCurve(bezier);
+    //        BezierEditor.DrawCurve(bezier);
 
-            DrawControlPointLine(a, b, Color.red);
-            DrawControlPointLine(d, c, Color.blue);
+    //        DrawControlPointLine(a, b, Color.red);
+    //        DrawControlPointLine(d, c, Color.blue);
 
-            Handles.color = Color.white;
-            for(int l = 0; l < 4; l++)
-            {
-                if (Handles.Button(curvePoints[l], handleRotation, handleSize * HandleUtility.GetHandleSize(curvePoints[l]), pickSize * HandleUtility.GetHandleSize(curvePoints[l]), Handles.SphereCap))
-                {
-                    selectedIndex = (selectedIndex != (i-1) + l) ? (i - 1) + l : -1;
-                }
-                if (selectedIndex == (i - 1) + l)
-                {
-                    EditorGUI.BeginChangeCheck();
-                    curvePoints[l] = Handles.DoPositionHandle(curvePoints[l], handleRotation);
-                    if (EditorGUI.EndChangeCheck())
-                    {
-                        Undo.RecordObject(bezier, "Move Bezier Point");
-                        EditorUtility.SetDirty(bezier);
-                        bezier.CtrlPoints[(i - 1) + l] = handleTransform.InverseTransformPoint(curvePoints[l]);
-                    }
-                }
-            }
+    //        Handles.color = Color.white;
+    //        for(int l = 0; l < 4; l++)
+    //        {
+    //            if (Handles.Button(curvePoints[l], handleRotation, handleSize * HandleUtility.GetHandleSize(curvePoints[l]), pickSize * HandleUtility.GetHandleSize(curvePoints[l]), Handles.SphereCap))
+    //            {
+    //                selectedIndex = (selectedIndex != (i-1) + l) ? (i - 1) + l : -1;
+    //            }
+    //            if (selectedIndex == (i - 1) + l)
+    //            {
+    //                EditorGUI.BeginChangeCheck();
+    //                curvePoints[l] = Handles.DoPositionHandle(curvePoints[l], handleRotation);
+    //                if (EditorGUI.EndChangeCheck())
+    //                {
+    //                    Undo.RecordObject(bezier, "Move Bezier Point");
+    //                    EditorUtility.SetDirty(bezier);
+    //                    bezier.CtrlPoints[(i - 1) + l] = handleTransform.InverseTransformPoint(curvePoints[l]);
+    //                }
+    //            }
+    //        }
             
             
-        }
+    //    }
         
-    }
+    //}
 
-    static void DrawCurve(BezierSpline spline)
-    {
-        Handles.color = Color.green;
-        Vector3 v = spline.Position(0f);
-        for (int i = 1; i <= 50*((spline.CtrlPoints.Length-1)/3); i++)
-        {
-            Vector3 u = spline.Position((float)i / 50 * ((spline.CtrlPoints.Length - 1) / 3));
-            Handles.DrawLine(v, u);
-            v = u;
-        }
-    }
+    //static void DrawCurve(BezierSpline spline)
+    //{
+    //    Handles.color = Color.green;
+    //    Vector3 v = spline.Position(0f);
+    //    for (int i = 1; i <= 50*((spline.CtrlPoints.Length-1)/3); i++)
+    //    {
+    //        Vector3 u = spline.Position((float)i / 50 * ((spline.CtrlPoints.Length - 1) / 3));
+    //        Handles.DrawLine(v, u);
+    //        v = u;
+    //    }
+    //}
 
     static void DrawControlPointLine(Vector3 a, Vector3 b, Color col)
     { 

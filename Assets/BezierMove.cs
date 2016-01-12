@@ -8,20 +8,20 @@ public class BezierMove : MonoBehaviour
 	// Use this for initialization
 	void Start ()
     {
-        StartCoroutine(Move());
+        //StartCoroutine(Move());
 	}
 
-    IEnumerator Move()
-    {
-        float elapsedTime = 0.0f;
-        while (elapsedTime < t)
-        {
-            transform.position = s.Position(elapsedTime / t);
-            elapsedTime += Time.deltaTime;
-            yield return null;
-        }
-        transform.position = s.Position(0);
-        elapsedTime = 0.0f;
-        StartCoroutine(Move());
-    }
+    //IEnumerator Move()
+    //{
+    //    float elapsedTime = 0.0f;
+    //    while (elapsedTime < t)
+    //    {
+    //        transform.position = BezierCurve.Position(elapsedTime / t);
+    //        elapsedTime += Time.deltaTime;
+    //        yield return null;
+    //    }
+    //    transform.position = s.Position(0);
+    //    elapsedTime = 0.0f;
+    //    StartCoroutine(Move());
+    //}
 }
