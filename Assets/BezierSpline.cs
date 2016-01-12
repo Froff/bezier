@@ -6,7 +6,7 @@ public class BezierSpline : MonoBehaviour
     
    //public Vector3[] CtrlPoints = { Vector3.right * 0.5f, Vector3.right, Vector3.right * 1.5f };
 
-    public BezierCurve[] curves = { new BezierCurve(Vector3.right, Vector3.up, Vector3.forward)};
+    public BezierCurve[] curves = { new BezierCurve(Vector3.right, Vector3.up, Vector3.forward) };
 
     //public Vector3 Position(float t)
     //{
@@ -30,15 +30,29 @@ public class BezierCurve
         this.c = c;
     }
 
-
-
-    public static Vector3 Position(float t, Vector3 a, Vector3 b, Vector3 c, Vector3 d)
+    public Vector3 Position(float t, Vector3 start)
     {
         float n = 1 - t;
-        Vector3 p = a * n * n * n;  //(1-t)^3*a
-        p += 3 * n * n * t * b;     //3(1-t)^2*t*b
-        p += 3 * n * t * t * c;     //3(1-t)*t^2*c
-        p += t * t * t * d;         //t^3*d
+        Vector3 p = start * n * n * n;  //(1-t)^3*a
+                p += 3 * n * n * t * a; //3(1-t)^2*t*b
+                p += 3 * n * t * t * b; //3(1-t)*t^2*c
+                p += t * t * t * c;     //t^3*d
+
+        return p;
+    }
+
+    public static Vector3 Position(float t, Vector3 start, BezierCurve curve)
+    {
+        return Position(t, start, curve.a, curve.b, curve.c);
+    }
+
+    public static Vector3 Position(float t, Vector3 o, Vector3 a, Vector3 b, Vector3 c)
+    {
+        float n = 1 - t;
+        Vector3 p = o * n * n * n;  //(1-t)^3*a
+        p += 3 * n * n * t * a;     //3(1-t)^2*t*b
+        p += 3 * n * t * t * b;     //3(1-t)*t^2*c
+        p += t * t * t * c;         //t^3*d
 
         return p;
     }
