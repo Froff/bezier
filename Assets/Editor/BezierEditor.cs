@@ -11,6 +11,7 @@ public class BezierEditor : Editor
 
     public override void OnInspectorGUI()
     {
+        serializedObject.UpdateIfDirtyOrScript();
         SerializedProperty curves = serializedObject.FindProperty("curves");
         SerializedProperty sp = serializedObject.GetIterator();
        
@@ -98,60 +99,61 @@ public class BezierEditor : Editor
 
             Handles.color = Color.white;
 
-
-            //DRAW HANDLES
-            if (Handles.Button(a, handleRotation, handleSize * HandleUtility.GetHandleSize(a), pickSize * HandleUtility.GetHandleSize(a), Handles.SphereCap))
+            if(Event.current.alt) //toggle plz
             {
-                selectedIndex = (selectedIndex < (i * 3) + 0) ? (i * 3) + 0 : -1;
-            }
-            if (selectedIndex == (i * 3) + 0)
-            {
-                EditorGUI.BeginChangeCheck();
-                a = Handles.DoPositionHandle(a, handleRotation);
-                if (EditorGUI.EndChangeCheck())
+                //DRAW HANDLES
+                if (Handles.Button(a, handleRotation, handleSize * HandleUtility.GetHandleSize(a), pickSize * HandleUtility.GetHandleSize(a), Handles.SphereCap))
                 {
-                    Undo.RecordObject(spline, "Move Bezier Point");
-                    EditorUtility.SetDirty(spline);
-
-                    curve.a = handleTransform.InverseTransformPoint(a);
+                    selectedIndex = (selectedIndex < (i * 3) + 0) ? (i * 3) + 0 : -1;
                 }
-            }
-
-            if (Handles.Button(b, handleRotation, handleSize * HandleUtility.GetHandleSize(b), pickSize * HandleUtility.GetHandleSize(b), Handles.SphereCap))
-            {
-                selectedIndex = (selectedIndex < (i*3)+1) ? (i * 3) + 1 : -1;
-            }
-            if (selectedIndex == (i * 3) + 1)
-            {
-                EditorGUI.BeginChangeCheck();
-                b = Handles.DoPositionHandle(b, handleRotation);
-                if (EditorGUI.EndChangeCheck())
+                if (selectedIndex == (i * 3) + 0)
                 {
-                    Undo.RecordObject(spline, "Move Bezier Point");
-                    EditorUtility.SetDirty(spline);
-
-                    curve.b = handleTransform.InverseTransformPoint(b);
+                    EditorGUI.BeginChangeCheck();
+                    a = Handles.DoPositionHandle(a, handleRotation);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        Undo.RecordObject(spline, "Move Bezier Point");
+                        EditorUtility.SetDirty(spline);
+                        spline.curves[i].a = curve.a;
+                        curve.a = handleTransform.InverseTransformPoint(a);
+                    }
                 }
-            }
 
-            if (Handles.Button(c, handleRotation, handleSize * HandleUtility.GetHandleSize(c), pickSize * HandleUtility.GetHandleSize(c), Handles.SphereCap))
-            {
-                selectedIndex = (selectedIndex < (i * 3) + 2) ? (i * 3) + 2 : -1;
-            }
-            if (selectedIndex == (i * 3) + 2)
-            {
-                EditorGUI.BeginChangeCheck();
-                c = Handles.DoPositionHandle(c, handleRotation);
-                if (EditorGUI.EndChangeCheck())
+                if (Handles.Button(b, handleRotation, handleSize * HandleUtility.GetHandleSize(b), pickSize * HandleUtility.GetHandleSize(b), Handles.SphereCap))
                 {
-                    Undo.RecordObject(spline, "Move Bezier Point");
-                    EditorUtility.SetDirty(spline);
-
-                    curve.c = handleTransform.InverseTransformPoint(c);
+                    selectedIndex = (selectedIndex < (i * 3) + 1) ? (i * 3) + 1 : -1;
                 }
+                if (selectedIndex == (i * 3) + 1)
+                {
+                    EditorGUI.BeginChangeCheck();
+                    b = Handles.DoPositionHandle(b, handleRotation);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        Undo.RecordObject(spline, "Move Bezier Point");
+                        EditorUtility.SetDirty(spline);
+                        spline.curves[i].b = curve.b;
+                        curve.b = handleTransform.InverseTransformPoint(b);
+                    }
+                }
+
+                if (Handles.Button(c, handleRotation, handleSize * HandleUtility.GetHandleSize(c), pickSize * HandleUtility.GetHandleSize(c), Handles.SphereCap))
+                {
+                    selectedIndex = (selectedIndex < (i * 3) + 2) ? (i * 3) + 2 : -1;
+                }
+                if (selectedIndex == (i * 3) + 2)
+                {
+                    EditorGUI.BeginChangeCheck();
+                    c = Handles.DoPositionHandle(c, handleRotation);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        Undo.RecordObject(spline, "Move Bezier Point");
+                        EditorUtility.SetDirty(spline);
+                        spline.curves[i].c = curve.c;
+                        curve.c = handleTransform.InverseTransformPoint(c);
+                    }
+                }
+
             }
-
-
             o = curve.c; //Last endpoint is new startpoint
         }
     }

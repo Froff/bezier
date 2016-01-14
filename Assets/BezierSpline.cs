@@ -12,8 +12,7 @@ public class BezierSpline : MonoBehaviour
     {
 
         t = (Mathf.Clamp01(t) * (curves.Length));
-        int i = (int)t;     
-        Debug.Log(i + " , " + t);
+        int i = (int)t;
         t -= i;
         
         if (i==0)
