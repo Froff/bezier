@@ -53,8 +53,8 @@ public class BezierCurve
     public static Vector3 Position(float t, Vector3 o, Vector3 a, Vector3 b, Vector3 c)
     {
         float n = 1 - t;
-        Vector3 p = o * n * n * n; 
-        p += 3 * n * n * t * a;    
+        Vector3 p = o * n * n * n;  
+        p += 3 * n * n * t * a;     
         p += 3 * n * t * t * b;     
         p += t * t * t * c;         
 

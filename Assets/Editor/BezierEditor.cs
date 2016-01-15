@@ -9,6 +9,18 @@ public class BezierEditor : Editor
 
     private int selectedIndex = -1;
 
+    private bool curveEdit = false;
+    private CurveEditSettings editSettings = CurveEditSettings.MAIN_NODES;
+
+    [System.Flags]
+    private enum CurveEditSettings : int
+    {
+        MAIN_NODES = 1, //0001
+        CTRL_NODES = 2, //0010
+        ALONG_AXIS = 4, //0100
+
+    }
+
     public override void OnInspectorGUI()
     {
         serializedObject.UpdateIfDirtyOrScript();
@@ -65,6 +77,38 @@ public class BezierEditor : Editor
         GUI.enabled = true;
         GUILayout.EndHorizontal();
 
+        
+        curveEdit = GUILayout.Toggle(curveEdit, "CtrlNodes",EditorStyles.toolbarButton);
+        if(curveEdit)
+        {
+            GUI.skin.button.active.textColor = Color.blue;
+
+            GUILayout.BeginHorizontal(EditorStyles.toolbar, GUILayout.ExpandWidth(true));
+            
+            
+            if (GUILayout.Toggle((editSettings & CurveEditSettings.CTRL_NODES) == CurveEditSettings.CTRL_NODES, "Control Nodes", EditorStyles.toolbarButton))
+            {
+                editSettings |= CurveEditSettings.CTRL_NODES;
+            }
+            GUILayout.EndHorizontal();
+            
+            GUI.skin.button.active.textColor = Color.black;
+            GUI.color = guiColor;
+            SceneView.RepaintAll();
+            
+        }
+        
+        if (curves.arraySize <= 1)
+        {
+            GUI.enabled = false;
+        }
+        if (GUILayout.Button("Remove Curve"))
+        {
+            curves.DeleteArrayElementAtIndex(curves.arraySize - 1);
+            serializedObject.ApplyModifiedProperties();
+        }
+        GUI.enabled = true;
+
 
 
     }
@@ -93,63 +137,69 @@ public class BezierEditor : Editor
 
             DrawCurve(o, a, b, c);
 
-            //DRAW HELPLINES
-            DrawHelpLine(o, a, Color.red);
-            DrawHelpLine(c, b, Color.blue);
-
-            Handles.color = Color.white;
-
-            if(Event.current.alt) //toggle plz
+            if (curveEdit)
             {
                 //DRAW HANDLES
-                if (Handles.Button(a, handleRotation, handleSize * HandleUtility.GetHandleSize(a), pickSize * HandleUtility.GetHandleSize(a), Handles.SphereCap))
+                if ((editSettings & CurveEditSettings.CTRL_NODES) == CurveEditSettings.CTRL_NODES)
                 {
-                    selectedIndex = (selectedIndex < (i * 3) + 0) ? (i * 3) + 0 : -1;
-                }
-                if (selectedIndex == (i * 3) + 0)
-                {
-                    EditorGUI.BeginChangeCheck();
-                    a = Handles.DoPositionHandle(a, handleRotation);
-                    if (EditorGUI.EndChangeCheck())
+
+                    //DRAW HELPLINES
+                    DrawHelpLine(o, a, Color.red);
+                    DrawHelpLine(c, b, Color.blue);
+
+                    Handles.color = Color.white;
+
+                    if (Handles.Button(a, handleRotation, handleSize * HandleUtility.GetHandleSize(a), pickSize * HandleUtility.GetHandleSize(a), Handles.SphereCap))
                     {
-                        Undo.RecordObject(spline, "Move Bezier Point");
-                        EditorUtility.SetDirty(spline);
-                        spline.curves[i].a = curve.a;
-                        curve.a = handleTransform.InverseTransformPoint(a);
+                        selectedIndex = (selectedIndex < (i * 3) + 0) ? (i * 3) + 0 : -1;
+                    }
+                    if (selectedIndex == (i * 3) + 0)
+                    {
+                        EditorGUI.BeginChangeCheck();
+                        a = Handles.DoPositionHandle(a, handleRotation);
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            Undo.RecordObject(spline, "Move Bezier Point");
+                            EditorUtility.SetDirty(spline);
+                            spline.curves[i].a = curve.a;
+                            curve.a = handleTransform.InverseTransformPoint(a);
+                        }
+                    }
+
+                    if (Handles.Button(b, handleRotation, handleSize * HandleUtility.GetHandleSize(b), pickSize * HandleUtility.GetHandleSize(b), Handles.SphereCap))
+                    {
+                        selectedIndex = (selectedIndex < (i * 3) + 1) ? (i * 3) + 1 : -1;
+                    }
+                    if (selectedIndex == (i * 3) + 1)
+                    {
+                        EditorGUI.BeginChangeCheck();
+                        b = Handles.DoPositionHandle(b, handleRotation);
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            Undo.RecordObject(spline, "Move Bezier Point");
+                            EditorUtility.SetDirty(spline);
+                            spline.curves[i].b = curve.b;
+                            curve.b = handleTransform.InverseTransformPoint(b);
+                        }
                     }
                 }
-
-                if (Handles.Button(b, handleRotation, handleSize * HandleUtility.GetHandleSize(b), pickSize * HandleUtility.GetHandleSize(b), Handles.SphereCap))
+                if ((editSettings & CurveEditSettings.MAIN_NODES) == CurveEditSettings.MAIN_NODES)
                 {
-                    selectedIndex = (selectedIndex < (i * 3) + 1) ? (i * 3) + 1 : -1;
-                }
-                if (selectedIndex == (i * 3) + 1)
-                {
-                    EditorGUI.BeginChangeCheck();
-                    b = Handles.DoPositionHandle(b, handleRotation);
-                    if (EditorGUI.EndChangeCheck())
+                    if (Handles.Button(c, handleRotation, handleSize * HandleUtility.GetHandleSize(c), pickSize * HandleUtility.GetHandleSize(c), Handles.SphereCap))
                     {
-                        Undo.RecordObject(spline, "Move Bezier Point");
-                        EditorUtility.SetDirty(spline);
-                        spline.curves[i].b = curve.b;
-                        curve.b = handleTransform.InverseTransformPoint(b);
+                        selectedIndex = (selectedIndex < (i * 3) + 2) ? (i * 3) + 2 : -1;
                     }
-                }
-
-                if (Handles.Button(c, handleRotation, handleSize * HandleUtility.GetHandleSize(c), pickSize * HandleUtility.GetHandleSize(c), Handles.SphereCap))
-                {
-                    selectedIndex = (selectedIndex < (i * 3) + 2) ? (i * 3) + 2 : -1;
-                }
-                if (selectedIndex == (i * 3) + 2)
-                {
-                    EditorGUI.BeginChangeCheck();
-                    c = Handles.DoPositionHandle(c, handleRotation);
-                    if (EditorGUI.EndChangeCheck())
+                    if (selectedIndex == (i * 3) + 2)
                     {
-                        Undo.RecordObject(spline, "Move Bezier Point");
-                        EditorUtility.SetDirty(spline);
-                        spline.curves[i].c = curve.c;
-                        curve.c = handleTransform.InverseTransformPoint(c);
+                        EditorGUI.BeginChangeCheck();
+                        c = Handles.DoPositionHandle(c, handleRotation);
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            Undo.RecordObject(spline, "Move Bezier Point");
+                            EditorUtility.SetDirty(spline);
+                            spline.curves[i].c = curve.c;
+                            curve.c = handleTransform.InverseTransformPoint(c);
+                        }
                     }
                 }
 
