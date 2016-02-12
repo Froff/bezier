@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class BezierMove : MonoBehaviour
 {
@@ -13,6 +14,7 @@ public class BezierMove : MonoBehaviour
 
     IEnumerator Move()
     {
+		List<Vector3> Positions = new List<Vector3> ();
         float elapsedTime = 0.0f;
         while (elapsedTime < t)
         {
