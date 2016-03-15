@@ -15,9 +15,9 @@ public class BezierEditor : Editor
     [System.Flags]
     private enum CurveEditSettings : int
     {
-        MAIN_NODES = 1, //0001
-        CTRL_NODES = 2, //0010
-        ALONG_AXIS = 4, //0100
+        MAIN_NODES = 1 << 0, //0001
+        CTRL_NODES = 1 << 1, //0010
+        ALONG_AXIS = 1 << 2, //0100
 
     }
 

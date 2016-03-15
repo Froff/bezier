@@ -13,7 +13,7 @@ public class CatmullRomSpline : MonoBehaviour {
 	IEnumerator StartMovement() {
 		float timeElapsed = 0, normalTimeElapsed = 0;
 		int segmentCount = curve.controlPoints.Count - 3;
-		while (normalTimeElapsed < 1) {
+		while (normalTimeElapsed <= 1) {
 			int currentSegment = Mathf.FloorToInt(normalTimeElapsed * segmentCount);
 			float t = (normalTimeElapsed * segmentCount) % 1;
 
@@ -23,10 +23,30 @@ public class CatmullRomSpline : MonoBehaviour {
 			normalTimeElapsed = timeElapsed / period;
 			yield return null;
 		}
+		StartCoroutine(StartMovement());
+	}
+
+	public Vector3 GetPosition(float t) {
+		float normalTimeElapsed = t / period;
+		int segmentCount = curve.controlPoints.Count - 3;
+		int currentSegment = Mathf.FloorToInt(normalTimeElapsed * segmentCount);
+		float localT = (normalTimeElapsed * segmentCount) % 1;
+		return GetPosition(localT, currentSegment);
 	}
 
 	Vector3 GetPosition (float t, int segment) {
 		return GetPosition(t, curve.controlPoints.GetRange(segment, 4));
+	}
+
+	public static Vector3 GetPosition(float t, int segment, SplineCurve curve) {
+		return GetPosition(t, curve.controlPoints.GetRange(segment, 4));
+	}
+
+	public static Vector3 GetPosition(float t, SplineCurve curve) {
+		int segmentCount = curve.controlPoints.Count - 3;
+		int currentSegment = Mathf.FloorToInt(t * segmentCount);
+		float localT = (t * segmentCount) % 1;
+		return GetPosition(t, currentSegment, curve);
 	}
 
 	public static Vector3 GetPosition(float t, Vector3 a, Vector3 b, Vector3 c, Vector3 d) {
