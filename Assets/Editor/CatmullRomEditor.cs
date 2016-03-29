@@ -6,19 +6,28 @@ public class CatmullRomEditor : Editor
 {
     private const float handleSize = 0.10f;
 
-    ReorderableList controlPointList;
+    private ReorderableList controlPointList;
 
-    SerializedProperty periodProp;
-    CatmullRomSpline spline;
+    private SerializedProperty periodProp;
+    private CatmullRomSpline spline;
+
+    private Transform handleTransform;
+    private Quaternion handleRotation;
+
+    private int selectedControlPointIndex = -1;
 
     void OnEnable()
     {
         spline = target as CatmullRomSpline;
         controlPointList = new ReorderableList(serializedObject, serializedObject.FindProperty("controlPoints"), true, true, true, true);
         periodProp = serializedObject.FindProperty("period");
-        
+
+        handleTransform = spline.transform;
+        handleRotation = ( Tools.pivotRotation == PivotRotation.Local ) ? handleTransform.rotation : Quaternion.identity;
+
         controlPointList.drawHeaderCallback += HeaderDraw;
         controlPointList.drawElementCallback += ElementDraw;
+        controlPointList.drawFooterCallback += FooterDraw;
         
     }
 
@@ -26,6 +35,7 @@ public class CatmullRomEditor : Editor
     {
         controlPointList.drawHeaderCallback -= HeaderDraw;
         controlPointList.drawElementCallback -= ElementDraw;
+        controlPointList.drawFooterCallback -= FooterDraw;
     }
 
     public override void OnInspectorGUI()
@@ -46,7 +56,7 @@ public class CatmullRomEditor : Editor
         hRect.y += 1f;
         GUI.Label(new Rect(hRect.x, hRect.y, 100F, hRect.height-2),"Control Points");
         EditorGUI.BeginChangeCheck();
-        int value = EditorGUI.IntField(new Rect(hRect.x+hRect.width-45F,hRect.y,45F, hRect.height-2), controlPointList.count);
+        int value = EditorGUI.DelayedIntField(new Rect(hRect.x+hRect.width-45F,hRect.y,45F, hRect.height-2), controlPointList.count);
         if(EditorGUI.EndChangeCheck())
         {
             if(controlPointList.count > value)
@@ -70,8 +80,14 @@ public class CatmullRomEditor : Editor
     {
         eRect.y += 1;
         eRect.height -= 1;
+        
+        if(focused && active)
+        {
+            selectedControlPointIndex = i;
+            SceneView.RepaintAll();
+        }
 
-        if(GUI.Button(new Rect(eRect.x+1,eRect.y,38, eRect.height),"SET"))
+        if(GUI.Button(new Rect(eRect.x + 1, eRect.y, 38, eRect.height), new GUIContent("SET", "Use the current Scene-view camera position")))
         {
             controlPointList.serializedProperty.GetArrayElementAtIndex(i).vector3Value = SceneView.lastActiveSceneView.camera.transform.position + spline.transform.position;
         }
@@ -92,9 +108,33 @@ public class CatmullRomEditor : Editor
         {
             controlPointList.serializedProperty.GetArrayElementAtIndex(i).vector3Value = value;
         }
-
     }
 
+    void FooterDraw(Rect fRect)
+    {
+        ReorderableList.defaultBehaviours.DrawFooter(fRect, controlPointList);
+        fRect.y -= 3;
+        fRect.height += 2;
+        EditorGUI.BeginChangeCheck();
+        int value = EditorGUI.DelayedIntField(new Rect(fRect.width - 82F, fRect.y, 40F, fRect.height), controlPointList.count);
+        if(EditorGUI.EndChangeCheck())
+        {
+            if(controlPointList.count > value)
+            {
+                while(controlPointList.count > value)
+                {
+                    controlPointList.serializedProperty.DeleteArrayElementAtIndex(controlPointList.count - 1);
+                }
+            }
+            else if(controlPointList.count < value)
+            {
+                while(controlPointList.count < value)
+                {
+                    controlPointList.serializedProperty.InsertArrayElementAtIndex(controlPointList.count);
+                }
+            }
+        }
+    }
     #endregion
 
     #region SceneView
@@ -105,15 +145,38 @@ public class CatmullRomEditor : Editor
 		DrawCurve();
 		Handles.color = Color.blue;
 
-		for (int i = 0; i < spline.controlPoints.Count; i++) {
-			Vector3 worldSpaceOriginalPoint = spline.transform.TransformPoint(spline.controlPoints[i]);
-			EditorGUI.BeginChangeCheck();
-			Vector3 worldSpacePoint = Handles.FreeMoveHandle(worldSpaceOriginalPoint, Quaternion.identity, HandleUtility.GetHandleSize(worldSpaceOriginalPoint) * handleSize, Vector3.zero, Handles.DotCap);
-			if (EditorGUI.EndChangeCheck()) {
-				Undo.RecordObject(target, "Move Catmull-Rom control point");
-				spline.controlPoints[i] = spline.transform.InverseTransformPoint(worldSpacePoint);
-			}
+		for (int i = 0; i < spline.controlPoints.Count; i++)
+        {
+            DrawControlPoint(i);
 		}
+    }
+
+    private void DrawControlPoint(int index)
+    {
+        Vector3 worldSpaceOriginalPoint = spline.transform.TransformPoint(spline.controlPoints[index]);
+        if(selectedControlPointIndex == index)
+        {
+            //Do position handle
+            EditorGUI.BeginChangeCheck();
+            Vector3 worldSpacePoint = Handles.DoPositionHandle(worldSpaceOriginalPoint, handleRotation);
+            if(EditorGUI.EndChangeCheck())
+            {
+                Undo.RecordObject(target, "Move Catmull-Rom control point");
+                controlPointList.index = -1;
+                EditorUtility.SetDirty(spline);
+                spline.controlPoints[index] = spline.transform.InverseTransformPoint(worldSpacePoint);
+            }
+        }
+        else
+        {
+            //Do selection button
+            Handles.color = Color.blue;
+            float hSize = HandleUtility.GetHandleSize(worldSpaceOriginalPoint) * handleSize;
+            if(Handles.Button(worldSpaceOriginalPoint, handleRotation, hSize, hSize + 0.05f, Handles.DotCap))
+            {
+                selectedControlPointIndex = index;
+            }
+        }
     }
 
     void DrawCurve()
