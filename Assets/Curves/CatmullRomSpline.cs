@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 
 public class CatmullRomSpline : SplineCurve {
-	public float period;
+	public float period = 1f;
 
 	/// <summary>
 	/// Calculates and returns point t on this Catmull-Rom curve
