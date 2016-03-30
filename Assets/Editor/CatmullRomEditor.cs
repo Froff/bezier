@@ -104,6 +104,10 @@ public class CatmullRomEditor : Editor
 
     void ElementDraw(Rect eRect, int i, bool active, bool focused)
     {
+		if (spline.looping && (i == 0 || i == controlPointList.count - 1))
+		{
+			GUI.enabled = false;
+		}
 		eRect.y += 1;
 		eRect.height *= 0.5f;
         eRect.height -= 2;
@@ -143,6 +147,10 @@ public class CatmullRomEditor : Editor
 
 	void ElementBackgroundDraw(Rect ebRect, int i, bool active, bool focused)
 	{
+		if (spline.looping && (i == 0 || i == controlPointList.count - 1)) {
+			GUI.enabled = false;
+		}
+		
 		if (focused && active)
 		{
 			selectedControlPointIndex = i;
@@ -178,6 +186,7 @@ public class CatmullRomEditor : Editor
 		}
 		GUI.Box(ebRect, GUIContent.none);
 		GUI.color = Styles.guiColor;
+		GUI.enabled = true;
 	}
 
     void FooterDraw(Rect fRect)
@@ -243,6 +252,10 @@ public class CatmullRomEditor : Editor
 
     private void DrawControlPoint(int index)
     {
+		if (spline.looping && (index == 0 || index == spline.controlPoints.Count - 1))
+		{
+			return;
+		}
         Vector3 worldSpaceOriginalPoint = spline.transform.TransformPoint(spline.controlPoints[index]);
 		float hSize = HandleUtility.GetHandleSize(worldSpaceOriginalPoint) * handleSize;
 		Handles.color = Styles.controlPointColor;
@@ -272,7 +285,6 @@ public class CatmullRomEditor : Editor
 
     void DrawCurve()
     {
-		CatmullRomSpline spline = target as CatmullRomSpline;
         Handles.color = Styles.splineColor;
         Vector3 v = spline.GetPosition(0.0f);
 
