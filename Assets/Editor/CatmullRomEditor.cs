@@ -8,7 +8,9 @@ public class CatmullRomEditor : Editor
 
     private ReorderableList controlPointList;
 
-    private SerializedProperty periodProp;
+    private SerializedProperty
+		periodProp,
+		loopingProp;
     private CatmullRomSpline spline;
 
     private Transform handleTransform;
@@ -33,6 +35,7 @@ public class CatmullRomEditor : Editor
         spline = target as CatmullRomSpline;
         controlPointList = new ReorderableList(serializedObject, serializedObject.FindProperty("controlPoints"), true, true, true, true);
         periodProp = serializedObject.FindProperty("period");
+		loopingProp = serializedObject.FindProperty("looping");
 
         handleTransform = spline.transform;
         handleRotation = ( Tools.pivotRotation == PivotRotation.Local ) ? handleTransform.rotation : Quaternion.identity;
@@ -60,10 +63,8 @@ public class CatmullRomEditor : Editor
         controlPointList.DoLayoutList();
 		EditorGUILayout.Space();
         periodProp.floatValue = Mathf.Max(EditorGUILayout.DelayedFloatField("Period", periodProp.floatValue),0.001f);
-        serializedObject.ApplyModifiedProperties();
-        
-        
-        
+		loopingProp.boolValue = EditorGUILayout.Toggle("Looping", loopingProp.boolValue);
+		serializedObject.ApplyModifiedProperties();
     }
 
     #region listCallbacks

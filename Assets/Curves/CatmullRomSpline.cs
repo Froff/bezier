@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 public class CatmullRomSpline : SplineCurve {
 	public float period = 1f;
+	public bool looping = false; //When looping, the curve ignores the first and last control points, and uses points on the other side of the array instead
 
 	/// <summary>
 	/// Calculates and returns point t on this Catmull-Rom curve
@@ -13,8 +14,20 @@ public class CatmullRomSpline : SplineCurve {
 	protected override Vector3 GetLocalPosition (float t) {
 		float normalTimeElapsed = (t / period)%1;
 		int segmentCount = controlPoints.Count - 3;
+		if (looping) {
+			segmentCount++;
+		}
 		int currentSegment = Mathf.FloorToInt(normalTimeElapsed * segmentCount);
 		float localT = (normalTimeElapsed * segmentCount) % 1;
+		if (looping) {
+			if (currentSegment == 0) {
+				return GetLocalPosition(localT,controlPoints[controlPoints.Count-2], controlPoints[1], controlPoints[2], controlPoints[3]);
+			} else if (currentSegment == segmentCount - 2) {
+				return GetLocalPosition(localT, controlPoints[controlPoints.Count-4], controlPoints[controlPoints.Count - 3], controlPoints[controlPoints.Count - 2], controlPoints[1]);
+			} else if (currentSegment == segmentCount -1) {
+				return GetLocalPosition(localT, controlPoints[controlPoints.Count - 3], controlPoints[controlPoints.Count - 2], controlPoints[1], controlPoints[2]);
+			}
+		}
 		return GetLocalPosition(localT, currentSegment);
 	}
 
