@@ -63,7 +63,6 @@ public class CatmullRomEditor : Editor
         controlPointList.DoLayoutList();
 		EditorGUILayout.Space();
         periodProp.floatValue = Mathf.Max(EditorGUILayout.DelayedFloatField("Period", periodProp.floatValue),0.001f);
-		loopingProp.boolValue = EditorGUILayout.Toggle("Looping", loopingProp.boolValue);
 		serializedObject.ApplyModifiedProperties();
     }
 
@@ -72,9 +71,18 @@ public class CatmullRomEditor : Editor
     void HeaderDraw(Rect hRect)
     {
         hRect.y += 1f;
-        GUI.Label(new Rect(hRect.x, hRect.y, 100F, hRect.height-2),"Control Points");
-        EditorGUI.BeginChangeCheck();
-        int value = EditorGUI.DelayedIntField(new Rect(hRect.x+hRect.width-45F,hRect.y,45F, hRect.height-2), controlPointList.count);
+		hRect.height -= 2;
+        GUI.Label(new Rect(hRect.x, hRect.y, 100F, hRect.height),"Control Points");
+		
+		EditorGUI.BeginChangeCheck();
+		bool loop = EditorGUI.Toggle(new Rect(hRect.x + hRect.width - 125F, hRect.y, 70F, hRect.height), loopingProp.boolValue, EditorStyles.miniButton);
+		if (EditorGUI.EndChangeCheck())
+		{
+			loopingProp.boolValue = loop;
+		}
+		GUI.Label(new Rect(hRect.x + hRect.width - 112F, hRect.y-2F, 70F, hRect.height+2F), new GUIContent("Looping", "Should the spline loop?"), EditorStyles.miniBoldLabel);
+		EditorGUI.BeginChangeCheck();
+        int value = EditorGUI.DelayedIntField(new Rect(hRect.x+hRect.width-45F,hRect.y,45F, hRect.height), controlPointList.count);
         if(EditorGUI.EndChangeCheck())
         {
             if(controlPointList.count > value)
@@ -96,19 +104,15 @@ public class CatmullRomEditor : Editor
 
     void ElementDraw(Rect eRect, int i, bool active, bool focused)
     {
-		if (spline.looping && (i == 0 || i == controlPointList.count - 1)) {
+		if (spline.looping && (i == 0 || i == controlPointList.count - 1))
+		{
 			GUI.enabled = false;
 		}
 		eRect.y += 1;
 		eRect.height *= 0.5f;
         eRect.height -= 2;
 		
-        if (focused && active)
-        {
-            selectedControlPointIndex = i;
-            SceneView.RepaintAll();
-        }
-
+        
         if(GUI.Button(new Rect(eRect.x + 1, eRect.y, 38, eRect.height), new GUIContent("SET", "Use the current Scene-view camera position")))
         {
             controlPointList.serializedProperty.GetArrayElementAtIndex(i).vector3Value = spline.transform.InverseTransformPoint(SceneView.lastActiveSceneView.camera.transform.position);
@@ -134,6 +138,7 @@ public class CatmullRomEditor : Editor
 		}
 		if (GUI.Button(new Rect(eRect.x + 1 + eRect.width * 0.5f, eRect.y, eRect.width * 0.5f, eRect.height), new GUIContent("Paste", ((clipboardPoint != null) ? "Paste " + clipboardPoint.ToString() : "Clipboard empty")), EditorStyles.miniButtonRight))
 		{
+			GUI.FocusControl("");
 			if(clipboardPoint != null)
 				controlPointList.serializedProperty.GetArrayElementAtIndex(i).vector3Value = clipboardPoint.GetValueOrDefault();
 		}
@@ -145,7 +150,23 @@ public class CatmullRomEditor : Editor
 		if (spline.looping && (i == 0 || i == controlPointList.count - 1)) {
 			GUI.enabled = false;
 		}
-
+		
+		if (focused && active)
+		{
+			selectedControlPointIndex = i;
+			SceneView.RepaintAll();
+		}
+		Event current = Event.current;
+		if (current.GetTypeForControl(GUIUtility.GetControlID(FocusType.Passive)) == EventType.MouseDown)
+		{
+			if (current.clickCount == 2)
+			{
+				if (ebRect.Contains(current.mousePosition))
+				{
+					SceneView.lastActiveSceneView.LookAt(spline.transform.TransformPoint(controlPointList.serializedProperty.GetArrayElementAtIndex(i).vector3Value));
+				}
+			}
+		}
 		ebRect.y += 1;
 		ebRect.height -= 2;
 		ebRect.x += 1;
@@ -231,13 +252,17 @@ public class CatmullRomEditor : Editor
 
     private void DrawControlPoint(int index)
     {
-		if (spline.looping && (index == 0 || index == spline.controlPoints.Count - 1)) {
+		if (spline.looping && (index == 0 || index == spline.controlPoints.Count - 1))
+		{
 			return;
 		}
-		Vector3 worldSpaceOriginalPoint = spline.transform.TransformPoint(spline.controlPoints[index]);
-        if(selectedControlPointIndex == index)
+        Vector3 worldSpaceOriginalPoint = spline.transform.TransformPoint(spline.controlPoints[index]);
+		float hSize = HandleUtility.GetHandleSize(worldSpaceOriginalPoint) * handleSize;
+		Handles.color = Styles.controlPointColor;
+		if (selectedControlPointIndex == index)
         {
-            //Do position handle
+			//Do position handle
+			Handles.DotCap(100, worldSpaceOriginalPoint, Quaternion.identity, hSize);
             EditorGUI.BeginChangeCheck();
             Vector3 worldSpacePoint = Handles.DoPositionHandle(worldSpaceOriginalPoint, handleRotation);
             if(EditorGUI.EndChangeCheck())
@@ -250,9 +275,7 @@ public class CatmullRomEditor : Editor
         }
         else
         {
-            //Do selection button
-            Handles.color = Styles.controlPointColor;
-            float hSize = HandleUtility.GetHandleSize(worldSpaceOriginalPoint) * handleSize;
+            //Do selection button    
             if(Handles.Button(worldSpaceOriginalPoint, handleRotation, hSize, hSize + 0.05f, Handles.DotCap))
             {
                 selectedControlPointIndex = index;
