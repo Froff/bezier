@@ -104,16 +104,11 @@ public class CatmullRomEditor : Editor
 
     void ElementDraw(Rect eRect, int i, bool active, bool focused)
     {
-        eRect.y += 1;
+		eRect.y += 1;
 		eRect.height *= 0.5f;
         eRect.height -= 2;
 		
-        if (focused && active)
-        {
-            selectedControlPointIndex = i;
-            SceneView.RepaintAll();
-        }
-
+        
         if(GUI.Button(new Rect(eRect.x + 1, eRect.y, 38, eRect.height), new GUIContent("SET", "Use the current Scene-view camera position")))
         {
             controlPointList.serializedProperty.GetArrayElementAtIndex(i).vector3Value = spline.transform.InverseTransformPoint(SceneView.lastActiveSceneView.camera.transform.position);
@@ -148,6 +143,22 @@ public class CatmullRomEditor : Editor
 
 	void ElementBackgroundDraw(Rect ebRect, int i, bool active, bool focused)
 	{
+		if (focused && active)
+		{
+			selectedControlPointIndex = i;
+			SceneView.RepaintAll();
+		}
+		Event current = Event.current;
+		if (current.GetTypeForControl(GUIUtility.GetControlID(FocusType.Passive)) == EventType.MouseDown)
+		{
+			if (current.clickCount == 2)
+			{
+				if (ebRect.Contains(current.mousePosition))
+				{
+					SceneView.lastActiveSceneView.LookAt(spline.transform.TransformPoint(controlPointList.serializedProperty.GetArrayElementAtIndex(i).vector3Value));
+				}
+			}
+		}
 		ebRect.y += 1;
 		ebRect.height -= 2;
 		ebRect.x += 1;
