@@ -16,6 +16,18 @@ public class CatmullRomEditor : Editor
 
     private int selectedControlPointIndex = -1;
 
+	private static class Styles
+	{
+		public static Color endPointElementBackground = new Color(0.3f,0.3f,0.7f);
+		public static Color elementBackground = Color.gray;
+		public static Color selectedElementBackground = new Color(0.3f, 0.3f, 1);
+
+		public static Color controlPointColor = Color.blue;
+		public static Color splineColor = Color.green;
+
+		public static Color guiColor = GUI.color;
+	}
+
     void OnEnable()
     {
         spline = target as CatmullRomSpline;
@@ -25,15 +37,19 @@ public class CatmullRomEditor : Editor
         handleTransform = spline.transform;
         handleRotation = ( Tools.pivotRotation == PivotRotation.Local ) ? handleTransform.rotation : Quaternion.identity;
 
+
+		controlPointList.elementHeight *= 2;
         controlPointList.drawHeaderCallback += HeaderDraw;
         controlPointList.drawElementCallback += ElementDraw;
         controlPointList.drawFooterCallback += FooterDraw;
+		controlPointList.drawElementBackgroundCallback += ElementBackgroundDraw;
         
     }
 
     void OnDisable()
     {
-        controlPointList.drawHeaderCallback -= HeaderDraw;
+		controlPointList.elementHeight /= 2;
+		controlPointList.drawHeaderCallback -= HeaderDraw;
         controlPointList.drawElementCallback -= ElementDraw;
         controlPointList.drawFooterCallback -= FooterDraw;
     }
@@ -79,9 +95,10 @@ public class CatmullRomEditor : Editor
     void ElementDraw(Rect eRect, int i, bool active, bool focused)
     {
         eRect.y += 1;
-        eRect.height -= 1;
-        
-        if(focused && active)
+		eRect.height *= 0.5f;
+        eRect.height -= 2;
+		
+        if (focused && active)
         {
             selectedControlPointIndex = i;
             SceneView.RepaintAll();
@@ -89,16 +106,11 @@ public class CatmullRomEditor : Editor
 
         if(GUI.Button(new Rect(eRect.x + 1, eRect.y, 38, eRect.height), new GUIContent("SET", "Use the current Scene-view camera position")))
         {
-            controlPointList.serializedProperty.GetArrayElementAtIndex(i).vector3Value = SceneView.lastActiveSceneView.camera.transform.position + spline.transform.position;
+            controlPointList.serializedProperty.GetArrayElementAtIndex(i).vector3Value = spline.transform.InverseTransformPoint(SceneView.lastActiveSceneView.camera.transform.position);
         }
-
-        eRect.xMin += 40;
-        eRect.xMax += 2;
-        Color guiColor = GUI.color;
-        GUI.color = Color.gray;
-        GUI.Box(eRect, GUIContent.none, EditorStyles.helpBox);
-        GUI.color = guiColor;
-        eRect.xMin -= 40;
+        //eRect.xMin += 40;
+       
+        //eRect.xMin -= 40;
         eRect.xMax -= 2;
         eRect.y += 2;
         eRect.height -= 1;
@@ -110,13 +122,31 @@ public class CatmullRomEditor : Editor
         }
     }
 
+	void ElementBackgroundDraw(Rect ebRect, int i, bool active, bool focused)
+	{
+		ebRect.y += 1;
+		ebRect.height -= 2;
+		ebRect.x += 1;
+		ebRect.width -= 2;
+
+		GUI.color = (i == 0 || i == controlPointList.count - 1) ? Styles.endPointElementBackground : Styles.elementBackground;
+		if(active)
+		{
+			GUI.color = Styles.selectedElementBackground;
+		}
+		GUI.Box(ebRect, GUIContent.none);
+		GUI.color = Styles.guiColor;
+	}
+
     void FooterDraw(Rect fRect)
     {
+		
         ReorderableList.defaultBehaviours.DrawFooter(fRect, controlPointList);
-        fRect.y -= 3;
+		fRect.x += EditorGUI.indentLevel+1;
+		fRect.y -= 3;
         fRect.height += 2;
         EditorGUI.BeginChangeCheck();
-        int value = EditorGUI.DelayedIntField(new Rect(fRect.width - 82F, fRect.y, 40F, fRect.height), controlPointList.count);
+        int value = EditorGUI.DelayedIntField(new Rect(fRect.x, fRect.y, 40F, fRect.height), controlPointList.count);
         if(EditorGUI.EndChangeCheck())
         {
             if(controlPointList.count > value)
@@ -141,9 +171,7 @@ public class CatmullRomEditor : Editor
 
     void OnSceneGUI()
 	{
-        CatmullRomSpline spline = target as CatmullRomSpline;
 		DrawCurve();
-		Handles.color = Color.blue;
 
 		for (int i = 0; i < spline.controlPoints.Count; i++)
         {
@@ -170,7 +198,7 @@ public class CatmullRomEditor : Editor
         else
         {
             //Do selection button
-            Handles.color = Color.blue;
+            Handles.color = Styles.controlPointColor;
             float hSize = HandleUtility.GetHandleSize(worldSpaceOriginalPoint) * handleSize;
             if(Handles.Button(worldSpaceOriginalPoint, handleRotation, hSize, hSize + 0.05f, Handles.DotCap))
             {
@@ -182,7 +210,7 @@ public class CatmullRomEditor : Editor
     void DrawCurve()
     {
 		CatmullRomSpline spline = target as CatmullRomSpline;
-        Handles.color = Color.green;
+        Handles.color = Styles.splineColor;
         Vector3 v = spline.GetPosition(0.0f);
 
         for (float i = 0.03f; i <= spline.period; i += 0.03f)
