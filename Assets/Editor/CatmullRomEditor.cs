@@ -124,11 +124,16 @@ public class CatmullRomEditor : Editor
 		{
 			clipboardPoint = controlPointList.serializedProperty.GetArrayElementAtIndex(i).vector3Value;
         }
+		if(clipboardPoint == null)
+		{
+			GUI.enabled = false;
+		}
 		if (GUI.Button(new Rect(eRect.x + 1 + eRect.width * 0.5f, eRect.y, eRect.width * 0.5f, eRect.height), new GUIContent("Paste", ((clipboardPoint != null) ? "Paste " + clipboardPoint.ToString() : "Clipboard empty")), EditorStyles.miniButtonRight))
 		{
 			if(clipboardPoint != null)
 				controlPointList.serializedProperty.GetArrayElementAtIndex(i).vector3Value = clipboardPoint.GetValueOrDefault();
 		}
+		GUI.enabled = true;
 	}
 
 	void ElementBackgroundDraw(Rect ebRect, int i, bool active, bool focused)
@@ -178,8 +183,11 @@ public class CatmullRomEditor : Editor
             }
         }
 
-		
-		if (GUI.Button(new Rect(fRect.x + 40F, fRect.y, fRect.width - 100F, fRect.height), new GUIContent("Paste as new", ((clipboardPoint != null) ? "Paste " + clipboardPoint.ToString() : "Clipboard empty")), EditorStyles.toolbarButton))
+		if (clipboardPoint == null)
+		{
+			GUI.enabled = false;
+		}
+			if (GUI.Button(new Rect(fRect.x + 40F, fRect.y, fRect.width - 100F, fRect.height), new GUIContent("Paste as new", ((clipboardPoint != null) ? "Paste " + clipboardPoint.ToString() : "Clipboard empty")), EditorStyles.toolbarButton))
 		{
 			if (clipboardPoint != null)
 			{
@@ -188,7 +196,8 @@ public class CatmullRomEditor : Editor
 				controlPointList.serializedProperty.GetArrayElementAtIndex(i).vector3Value = clipboardPoint.GetValueOrDefault();
 			}
 		}
-		if(GUI.Button(new Rect(fRect.x + fRect.width-64F,fRect.y, 30F,fRect.height), EditorGUIUtility.IconContent("Toolbar Plus", "Add to list"),EditorStyles.toolbarButton))
+		GUI.enabled = true;
+		if (GUI.Button(new Rect(fRect.x + fRect.width-64F,fRect.y, 30F,fRect.height), EditorGUIUtility.IconContent("Toolbar Plus", "Add to list"),EditorStyles.toolbarButton))
 		{
 			ReorderableList.defaultBehaviours.DoAddButton(controlPointList);
 		}
