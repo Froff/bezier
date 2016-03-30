@@ -15,7 +15,7 @@ public class CatmullRomEditor : Editor
     private Quaternion handleRotation;
 
     private int selectedControlPointIndex = -1;
-
+	private Vector3? clipboardPoint = null;
 	private static class Styles
 	{
 		public static Color endPointElementBackground = new Color(0.3f,0.3f,0.7f);
@@ -58,7 +58,8 @@ public class CatmullRomEditor : Editor
     {
         serializedObject.Update();
         controlPointList.DoLayoutList();
-        periodProp.floatValue = EditorGUILayout.FloatField("Period", periodProp.floatValue);
+		EditorGUILayout.Space();
+        periodProp.floatValue = Mathf.Max(EditorGUILayout.DelayedFloatField("Period", periodProp.floatValue),0.001f);
         serializedObject.ApplyModifiedProperties();
         
         
@@ -108,9 +109,6 @@ public class CatmullRomEditor : Editor
         {
             controlPointList.serializedProperty.GetArrayElementAtIndex(i).vector3Value = spline.transform.InverseTransformPoint(SceneView.lastActiveSceneView.camera.transform.position);
         }
-        //eRect.xMin += 40;
-       
-        //eRect.xMin -= 40;
         eRect.xMax -= 2;
         eRect.y += 2;
         eRect.height -= 1;
@@ -120,7 +118,18 @@ public class CatmullRomEditor : Editor
         {
             controlPointList.serializedProperty.GetArrayElementAtIndex(i).vector3Value = value;
         }
-    }
+		eRect.y += eRect.height;
+
+		if (GUI.Button(new Rect(eRect.x + 1, eRect.y, eRect.width * 0.5f, eRect.height), new GUIContent("Copy", "Copy position"),EditorStyles.miniButtonLeft))
+		{
+			clipboardPoint = controlPointList.serializedProperty.GetArrayElementAtIndex(i).vector3Value;
+        }
+		if (GUI.Button(new Rect(eRect.x + 1 + eRect.width * 0.5f, eRect.y, eRect.width * 0.5f, eRect.height), new GUIContent("Paste", ((clipboardPoint != null) ? "Paste " + clipboardPoint.ToString() : "Clipboard empty")), EditorStyles.miniButtonRight))
+		{
+			if(clipboardPoint != null)
+				controlPointList.serializedProperty.GetArrayElementAtIndex(i).vector3Value = clipboardPoint.GetValueOrDefault();
+		}
+	}
 
 	void ElementBackgroundDraw(Rect ebRect, int i, bool active, bool focused)
 	{
@@ -129,10 +138,17 @@ public class CatmullRomEditor : Editor
 		ebRect.x += 1;
 		ebRect.width -= 2;
 
-		GUI.color = (i == 0 || i == controlPointList.count - 1) ? Styles.endPointElementBackground : Styles.elementBackground;
-		if(active)
+		if (active)
 		{
 			GUI.color = Styles.selectedElementBackground;
+		}
+		else if (focused)
+		{
+			GUI.color = 0.5f * ((i == 0 || i == controlPointList.count - 1) ? Styles.endPointElementBackground : Styles.elementBackground);
+		}
+		else
+		{
+			GUI.color = (i == 0 || i == controlPointList.count - 1) ? Styles.endPointElementBackground : Styles.elementBackground;
 		}
 		GUI.Box(ebRect, GUIContent.none);
 		GUI.color = Styles.guiColor;
@@ -140,13 +156,10 @@ public class CatmullRomEditor : Editor
 
     void FooterDraw(Rect fRect)
     {
-		
-        ReorderableList.defaultBehaviours.DrawFooter(fRect, controlPointList);
 		fRect.x += EditorGUI.indentLevel+1;
 		fRect.y -= 3;
-        fRect.height += 2;
         EditorGUI.BeginChangeCheck();
-        int value = EditorGUI.DelayedIntField(new Rect(fRect.x, fRect.y, 40F, fRect.height), controlPointList.count);
+        int value = EditorGUI.DelayedIntField(new Rect(fRect.x+2, fRect.y, 38F, fRect.height), controlPointList.count,EditorStyles.toolbarPopup);
         if(EditorGUI.EndChangeCheck())
         {
             if(controlPointList.count > value)
@@ -164,7 +177,26 @@ public class CatmullRomEditor : Editor
                 }
             }
         }
-    }
+
+		
+		if (GUI.Button(new Rect(fRect.x + 40F, fRect.y, fRect.width - 100F, fRect.height), new GUIContent("Paste as new", ((clipboardPoint != null) ? "Paste " + clipboardPoint.ToString() : "Clipboard empty")), EditorStyles.toolbarButton))
+		{
+			if (clipboardPoint != null)
+			{
+				int i = controlPointList.count;
+				controlPointList.serializedProperty.InsertArrayElementAtIndex(i);
+				controlPointList.serializedProperty.GetArrayElementAtIndex(i).vector3Value = clipboardPoint.GetValueOrDefault();
+			}
+		}
+		if(GUI.Button(new Rect(fRect.x + fRect.width-64F,fRect.y, 30F,fRect.height), EditorGUIUtility.IconContent("Toolbar Plus", "Add to list"),EditorStyles.toolbarButton))
+		{
+			ReorderableList.defaultBehaviours.DoAddButton(controlPointList);
+		}
+		if (GUI.Button(new Rect(fRect.x + fRect.width - 34F, fRect.y, 30F, fRect.height), EditorGUIUtility.IconContent("Toolbar Minus", "Remove element from list"), EditorStyles.toolbarButton))
+		{
+			ReorderableList.defaultBehaviours.DoRemoveButton(controlPointList);
+		}
+	}
     #endregion
 
     #region SceneView
