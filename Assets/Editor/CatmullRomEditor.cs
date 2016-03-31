@@ -7,7 +7,7 @@ public class CatmullRomEditor : Editor
     private const float handleSize = 0.10f;
 
     private ReorderableList controlPointList;
-
+	private bool canRemove { get { return controlPointList.count > 4; } }
     private SerializedProperty
 		periodProp,
 		loopingProp;
@@ -46,8 +46,8 @@ public class CatmullRomEditor : Editor
         controlPointList.drawElementCallback += ElementDraw;
         controlPointList.drawFooterCallback += FooterDraw;
 		controlPointList.drawElementBackgroundCallback += ElementBackgroundDraw;
-        
-    }
+
+	}
 
     void OnDisable()
     {
@@ -55,12 +55,13 @@ public class CatmullRomEditor : Editor
 		controlPointList.drawHeaderCallback -= HeaderDraw;
         controlPointList.drawElementCallback -= ElementDraw;
         controlPointList.drawFooterCallback -= FooterDraw;
-    }
+		controlPointList.drawElementBackgroundCallback -= ElementBackgroundDraw;
+	}
 
     public override void OnInspectorGUI()
     {
         serializedObject.Update();
-        controlPointList.DoLayoutList();
+		controlPointList.DoLayoutList();
 		EditorGUILayout.Space();
         periodProp.floatValue = Mathf.Max(EditorGUILayout.DelayedFloatField("Period", periodProp.floatValue),0.001f);
 		serializedObject.ApplyModifiedProperties();
@@ -81,10 +82,12 @@ public class CatmullRomEditor : Editor
 			loopingProp.boolValue = loop;
 		}
 		GUI.Label(new Rect(hRect.x + hRect.width - 112F, hRect.y-2F, 70F, hRect.height+2F), new GUIContent("Looping", "Should the spline loop?"), EditorStyles.miniBoldLabel);
+		GUI.enabled = canRemove;
 		EditorGUI.BeginChangeCheck();
         int value = EditorGUI.DelayedIntField(new Rect(hRect.x+hRect.width-45F,hRect.y,45F, hRect.height), controlPointList.count);
         if(EditorGUI.EndChangeCheck())
         {
+			value = Mathf.Max(value, 4);
             if(controlPointList.count > value)
             {
                 while(controlPointList.count > value)
@@ -100,6 +103,7 @@ public class CatmullRomEditor : Editor
                 }
             }
         }
+		GUI.enabled = true;
     }
 
     void ElementDraw(Rect eRect, int i, bool active, bool focused)
@@ -189,35 +193,39 @@ public class CatmullRomEditor : Editor
 		GUI.enabled = true;
 	}
 
-    void FooterDraw(Rect fRect)
-    {
-		fRect.x += EditorGUI.indentLevel+1;
+	void FooterDraw(Rect fRect)
+	{
+		fRect.x += EditorGUI.indentLevel + 1;
 		fRect.y -= 3;
-        EditorGUI.BeginChangeCheck();
-        int value = EditorGUI.DelayedIntField(new Rect(fRect.x+2, fRect.y, 38F, fRect.height), controlPointList.count,EditorStyles.toolbarPopup);
-        if(EditorGUI.EndChangeCheck())
-        {
-            if(controlPointList.count > value)
-            {
-                while(controlPointList.count > value)
-                {
-                    controlPointList.serializedProperty.DeleteArrayElementAtIndex(controlPointList.count - 1);
-                }
-            }
-            else if(controlPointList.count < value)
-            {
-                while(controlPointList.count < value)
-                {
-                    controlPointList.serializedProperty.InsertArrayElementAtIndex(controlPointList.count);
-                }
-            }
-        }
-
+		fRect.height += 4;
+		GUI.enabled = canRemove;
+		GUI.Box(new Rect(fRect.x + 2, fRect.y, 38F, fRect.height), GUIContent.none, EditorStyles.toolbarButton);
+		EditorGUI.BeginChangeCheck();
+		int value = EditorGUI.DelayedIntField(new Rect(fRect.x + 2, fRect.y, 38F, fRect.height), controlPointList.count);
+		if (EditorGUI.EndChangeCheck())
+		{
+			value = Mathf.Max(value, 4);
+			if (controlPointList.count > value)
+			{
+				while (controlPointList.count > value)
+				{
+					controlPointList.serializedProperty.DeleteArrayElementAtIndex(controlPointList.count - 1);
+				}
+			}
+			else if (controlPointList.count < value)
+			{
+				while (controlPointList.count < value)
+				{
+					controlPointList.serializedProperty.InsertArrayElementAtIndex(controlPointList.count);
+				}
+			}
+		}
+		GUI.enabled = true;
 		if (clipboardPoint == null)
 		{
 			GUI.enabled = false;
 		}
-			if (GUI.Button(new Rect(fRect.x + 40F, fRect.y, fRect.width - 100F, fRect.height), new GUIContent("Paste as new", ((clipboardPoint != null) ? "Paste " + clipboardPoint.ToString() : "Clipboard empty")), EditorStyles.toolbarButton))
+		if (GUI.Button(new Rect(fRect.x + 40F, fRect.y, fRect.width - 100F, fRect.height), new GUIContent("Paste as new", ((clipboardPoint != null) ? "Paste " + clipboardPoint.ToString() : "Clipboard empty")), EditorStyles.toolbarButton))
 		{
 			if (clipboardPoint != null)
 			{
@@ -227,15 +235,18 @@ public class CatmullRomEditor : Editor
 			}
 		}
 		GUI.enabled = true;
-		if (GUI.Button(new Rect(fRect.x + fRect.width-64F,fRect.y, 30F,fRect.height), EditorGUIUtility.IconContent("Toolbar Plus", "Add to list"),EditorStyles.toolbarButton))
+		if (GUI.Button(new Rect(fRect.x + fRect.width - 64F, fRect.y, 30F, fRect.height), EditorGUIUtility.IconContent("Toolbar Plus", "Add to list"), EditorStyles.toolbarButton))
 		{
 			ReorderableList.defaultBehaviours.DoAddButton(controlPointList);
 		}
-		if (GUI.Button(new Rect(fRect.x + fRect.width - 34F, fRect.y, 30F, fRect.height), EditorGUIUtility.IconContent("Toolbar Minus", "Remove element from list"), EditorStyles.toolbarButton))
+		GUI.enabled = canRemove;
+        if (GUI.Button(new Rect(fRect.x + fRect.width - 34F, fRect.y, 30F, fRect.height), EditorGUIUtility.IconContent("Toolbar Minus", "Remove element from list"), EditorStyles.toolbarButton))
 		{
 			ReorderableList.defaultBehaviours.DoRemoveButton(controlPointList);
 		}
+		GUI.enabled = true;
 	}
+
     #endregion
 
     #region SceneView

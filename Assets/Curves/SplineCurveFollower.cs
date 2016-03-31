@@ -1,7 +1,8 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class SplineCurveFollower : MonoBehaviour {
+public class SplineCurveFollower : MonoBehaviour
+{
 	public SplineCurve spline;
 
 	void Start() {
