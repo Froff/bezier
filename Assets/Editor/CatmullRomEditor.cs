@@ -5,22 +5,30 @@ using UnityEditorInternal;
 public class CatmullRomEditor : Editor
 {
     private const float handleSize = 0.10f;
+    private float splineGirth = 2f;
+    private bool drawNodes = true, drawSpline = true;
 
     private ReorderableList controlPointList;
 	private bool canRemove { get { return controlPointList.count > 4; } }
+
+    private CatmullRomSpline spline;
     private SerializedProperty
 		periodProp,
 		loopingProp;
-    private CatmullRomSpline spline;
+    
 
     private Transform handleTransform;
     private Quaternion handleRotation;
 
     private int selectedControlPointIndex = -1;
 	private Vector3? clipboardPoint = null;
+
 	private static class Styles
 	{
-		public static Color endPointElementBackground = new Color(0.3f,0.3f,0.7f);
+        public static GUIContent nodeLabel = new GUIContent("Nodes");
+        public static GUIContent splineLabel = new GUIContent("Spline");
+
+        public static Color endPointElementBackground = new Color(0.3f,0.3f,0.7f);
 		public static Color elementBackground = Color.gray;
 		public static Color selectedElementBackground = new Color(0.3f, 0.3f, 1);
 
@@ -28,6 +36,9 @@ public class CatmullRomEditor : Editor
 		public static Color splineColor = Color.green;
 
 		public static Color guiColor = GUI.color;
+
+		public static GUIStyle visibilityToggle = "VisibilityToggle";
+        public static GUIStyle sceneViewWindow = "TL Range Overlay";
 	}
 
     void OnEnable()
@@ -253,12 +264,46 @@ public class CatmullRomEditor : Editor
 
     void OnSceneGUI()
 	{
-		DrawCurve();
+		Rect area = new Rect(Screen.width - 210, Screen.height-130, 200, 100);
+		Handles.BeginGUI();
+        GUILayout.Window(200,area,DrawSceneWindow,"", Styles.sceneViewWindow);
+		Handles.EndGUI();
 
-		for (int i = 0; i < spline.controlPoints.Count; i++)
+        if(drawSpline)
+        { DrawCurve(); }
+
+        if(drawNodes)
         {
-            DrawControlPoint(i);
-		}
+            for(int i = 0; i < spline.controlPoints.Count; i++)
+            {
+                DrawControlPoint(i);
+            }
+        }
+    }
+
+    private void DrawSceneWindow(int id)
+    {
+        GUI.skin = EditorGUIUtility.GetBuiltinSkin(EditorSkin.Scene);
+        // Content of window here
+        EditorGUIUtility.labelWidth = 1;
+        EditorGUILayout.BeginHorizontal();
+        drawNodes = EditorGUILayout.Toggle(drawNodes, Styles.visibilityToggle);
+        GUILayout.Label(Styles.nodeLabel);
+        if(drawNodes)
+        {
+            if(GUILayout.Button("Test"))
+            {
+            }
+        }
+        EditorGUILayout.EndHorizontal();
+        EditorGUILayout.BeginHorizontal();
+        drawSpline = EditorGUILayout.Toggle(drawSpline, Styles.visibilityToggle);
+        GUILayout.Label(Styles.splineLabel);
+        if(drawSpline)
+        {
+            splineGirth = EditorGUILayout.FloatField(splineGirth);
+        }
+        EditorGUILayout.EndHorizontal();
     }
 
     private void DrawControlPoint(int index)
@@ -298,14 +343,16 @@ public class CatmullRomEditor : Editor
     {
         Handles.color = Styles.splineColor;
         Vector3 v = spline.GetPosition(0.0f);
-
+        Vector3 u;
         for (float i = 0.03f; i <= spline.period; i += 0.03f)
         {
-			Vector3 u = spline.GetPosition(i);
-            
-            Handles.DrawLine(v, u);
+			u = spline.GetPosition(i);
+            Handles.DrawAAPolyLine(splineGirth * 200.0f/Vector3.Distance(SceneView.lastActiveSceneView.camera.transform.position, v), 2, v, u);
             v = u;
         }
+        u = spline.GetPosition(spline.period-0.001f);//just to make sure it reaches the endpoint visually
+        Handles.DrawAAPolyLine(20f, 2, v, u);
+
     }
     #endregion
 }
