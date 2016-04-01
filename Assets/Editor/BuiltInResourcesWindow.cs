@@ -109,7 +109,7 @@ public class BuiltInResourcesWindow : EditorWindow
 					draw.Draw = () =>
 					{
 						if (GUILayout.Button(thisStyle.name, GUILayout.Width(width)))
-							CopyText("(GUIStyle)\"" + thisStyle.name + "\"");
+							CopyText(thisStyle.name);
 
 						GUILayout.BeginHorizontal();
 						GUILayout.Toggle(false, inactiveText, thisStyle, GUILayout.Width(width / 2));
