@@ -6,6 +6,8 @@ public class CatmullRomEditor : Editor
 {
     private const float handleSize = 0.10f;
 
+	private bool drawNodes = true;
+
     private ReorderableList controlPointList;
 	private bool canRemove { get { return controlPointList.count > 4; } }
     private SerializedProperty
@@ -28,6 +30,8 @@ public class CatmullRomEditor : Editor
 		public static Color splineColor = Color.green;
 
 		public static Color guiColor = GUI.color;
+
+		public static GUIStyle circularToggle = "ShurikenToggle";
 	}
 
     void OnEnable()
@@ -253,8 +257,29 @@ public class CatmullRomEditor : Editor
 
     void OnSceneGUI()
 	{
-		DrawCurve();
+		Rect area = new Rect(Screen.width - 210, Screen.height-130, 200, 100);
+        DrawCurve();
+		Handles.BeginGUI();
+		GUILayout.Window(2, area, (id) =>
+		{
+			// Content of window here
+			EditorGUIUtility.labelWidth = 72;
+			EditorGUILayout.BeginHorizontal();
+			drawNodes = EditorGUILayout.Toggle(new GUIContent("Draw nodes"),drawNodes,Styles.circularToggle);
+			if(drawNodes)
+			{
+				EditorGUI.BeginChangeCheck();
+				Color ctrlPointValue = EditorGUILayout.ColorField(Styles.controlPointColor);
+				if (EditorGUI.EndChangeCheck())
+				{
+					Styles.controlPointColor = ctrlPointValue;
+				}
+			}
+			EditorGUILayout.EndHorizontal();
+			drawNodes = EditorGUILayout.Toggle(new GUIContent("Draw spline"), drawNodes, Styles.circularToggle);
+		}, "Catmull Rom Spline");
 
+		Handles.EndGUI();
 		for (int i = 0; i < spline.controlPoints.Count; i++)
         {
             DrawControlPoint(i);
