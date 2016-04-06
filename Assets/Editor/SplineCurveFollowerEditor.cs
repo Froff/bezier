@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using UnityEditor;
 
-[CustomEditor(typeof(SplineCurveFollower))]
+[CustomEditor(typeof(SplineCurveFollower),true)]
 class SplineCurveFollowerEditor : Editor
 {
 	SplineCurveFollower follower;
